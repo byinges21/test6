@@ -1,0 +1,100 @@
+import datetime
+import json
+import time
+from datetime import datetime
+import os
+from typing import Dict, List
+
+class TaskManager:
+    def __init__(self):
+        self.tasks: Dict[str, List[dict]] = self._load_tasks()
+
+    def _load_tasks(self) -> Dict[str, List[dict]]:
+        if os.path.exists('tasks.json'):
+            with open('tasks.json', 'r') as f:
+                return json.load(f)
+        return {'tasks': []}
+
+    def _save_tasks(self):
+        with open('tasks.json', 'w') as f:
+            json.dump(self.tasks, f)
+
+    def add_task(self):
+        task = input("Enter your task: ")
+        due_time = input("Enter due time (HH:MM): ")
+        
+        try:
+            # Validate time format
+            due_datetime = datetime.strptime(due_time, "%H:%M")
+            current_date = datetime.now().date()
+            due_datetime = datetime.combine(current_date, due_datetime.time())
+            
+            task_obj = {
+                'description': task,
+                'due_time': due_datetime.strftime("%H:%M"),
+                'completed': False
+            }
+            
+            self.tasks['tasks'].append(task_obj)
+            self._save_tasks()
+            print("Task added successfully!")
+        except ValueError:
+            print("Invalid time format. Please use HH:MM format.")
+
+    def show_tasks(self):
+        if not self.tasks['tasks']:
+            print("No tasks for today!")
+            return
+        
+        print("\nToday's Tasks:")
+        for i, task in enumerate(self.tasks['tasks'], 1):
+            status = "✓" if task['completed'] else " "
+            print(f"{i}. [{status}] {task['description']} - Due at: {task['due_time']}")
+
+    def check_reminders(self):
+        current_time = datetime.now().strftime("%H:%M")
+        for task in self.tasks['tasks']:
+            if task['due_time'] == current_time and not task['completed']:
+                print(f"\nREMINDER: Task '{task['description']}' is due now!")
+
+    def mark_complete(self):
+        self.show_tasks()
+        try:
+            task_num = int(input("\nEnter task number to mark as complete: ")) - 1
+            if 0 <= task_num < len(self.tasks['tasks']):
+                self.tasks['tasks'][task_num]['completed'] = True
+                self._save_tasks()
+                print("Task marked as complete!")
+            else:
+                print("Invalid task number!")
+        except ValueError:
+            print("Please enter a valid number!")
+
+def main():
+    task_manager = TaskManager()
+    
+    while True:
+        print("\n=== Task Manager ===")
+        print("1. Add Task")
+        print("2. Show Tasks")
+        print("3. Mark Task Complete")
+        print("4. Exit")
+        
+        task_manager.check_reminders()
+        
+        choice = input("\nEnter your choice (1-4): ")
+        
+        if choice == '1':
+            task_manager.add_task()
+        elif choice == '2':
+            task_manager.show_tasks()
+        elif choice == '3':
+            task_manager.mark_complete()
+        elif choice == '4':
+            print("Goodbye!")
+            break
+        else:
+            print("Invalid choice. Please try again.")
+
+if __name__ == "__main__":
+    main()
